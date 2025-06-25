@@ -1,0 +1,44 @@
+{
+  "auth": {
+    "plugins": {
+      "awsCognitoAuthPlugin": {
+        "UserPool": {
+          "Default": {
+            "PoolId": "us-east-2_HEgFgpasb",
+            "AppClientId": "32b6rrbc2bkckbho9ojbqjmcef",
+            "Region": "us-east-2"
+          }
+        },
+        "CredentialsProvider": {
+          "CognitoIdentity": {
+            "Default": {
+              "PoolId": "us-east-2:identity-pool-id",
+              "Region": "us-east-2"
+            }
+          }
+        }
+      }
+    }
+  },
+  "api": {
+    "plugins": {
+      "awsAPIPlugin": {
+        "ZyRokAPI": {
+          "endpointType": "REST",
+          "endpoint": "https://api.zyrok.stream",
+          "region": "us-east-2",
+          "authorizationType": "AMAZON_COGNITO_USER_POOLS"
+        }
+      }
+    }
+  },
+  "storage": {
+    "plugins": {
+      "awsS3StoragePlugin": {
+        "bucket": "zyrok-serverless-content",
+        "region": "us-east-2",
+        "defaultAccessLevel": "guest"
+      }
+    }
+  }
+}
