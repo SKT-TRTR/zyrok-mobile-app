@@ -1,0 +1,119 @@
+name: Android Play Store Deployment
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      with:
+        api-level: 34
+        build-tools: 34.0.0
+        
+    - name: Install dependencies
+      run: |
+        npm install
+        npm install -g cordova@latest
+        
+    - name: Build React application
+      run: |
+        npm run build
+        mkdir -p www
+        cp -r dist/* www/
+        
+    - name: Add Android platform
+      run: |
+        cordova platform add android@latest
+        
+    - name: Configure AWS Cognito for Android
+      run: |
+        mkdir -p platforms/android/app/src/main/assets/www/js
+        cat > platforms/android/app/src/main/assets/www/js/aws-cognito-config.js << 'EOF'
+        window.AWS_COGNITO_CONFIG = {
+          userPoolId: 'us-east-2_HEgFgpasb',
+          userPoolWebClientId: '32b6rrbc2bkckbho9ojbqjmcef',
+          region: 'us-east-2',
+          oauth: {
+            domain: 'zyrok-auth.auth.us-east-2.amazoncognito.com',
+            scope: ['email', 'openid', 'profile'],
+            redirectSignIn: 'com.zyrok.app://',
+            redirectSignOut: 'com.zyrok.app://',
+            responseType: 'code'
+          }
+        };
+        EOF
+        
+    - name: Install Cordova plugins
+      run: |
+        cordova plugin add cordova-plugin-camera
+        cordova plugin add cordova-plugin-media-capture
+        cordova plugin add cordova-plugin-file
+        cordova plugin add cordova-plugin-file-transfer
+        cordova plugin add cordova-plugin-device
+        cordova plugin add cordova-plugin-network-information
+        cordova plugin add cordova-plugin-vibration
+        cordova plugin add cordova-plugin-statusbar
+        cordova plugin add cordova-plugin-splashscreen
+        cordova plugin add cordova-plugin-whitelist
+        cordova plugin add cordova-plugin-inappbrowser
+        
+    - name: Build Android APK
+      run: |
+        cordova build android --release
+        
+    - name: Sign APK for Play Store
+      if: github.ref == 'refs/heads/main'
+      run: |
+        echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > zyrok-release.keystore
+        
+        # Sign APK
+        jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+          -keystore zyrok-release.keystore \
+          -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+          -keypass "${{ secrets.ANDROID_KEY_PASSWORD }}" \
+          platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk \
+          zyrok-release
+        
+        # Align APK
+        $ANDROID_HOME/build-tools/34.0.0/zipalign -v 4 \
+          platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk \
+          platforms/android/app/build/outputs/apk/release/zyrok-release.apk
+          
+    - name: Upload to Google Play Store
+      if: github.ref == 'refs/heads/main'
+      uses: r0adkll/upload-google-play@v1.1.3
+      with:
+        serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        packageName: com.zyrok.app
+        releaseFiles: platforms/android/app/build/outputs/apk/release/zyrok-release.apk
+        track: internal
+        status: completed
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: zyrok-android-apk
+        path: platforms/android/app/build/outputs/apk/release/zyrok-release.apk
+        retention-days: 30
