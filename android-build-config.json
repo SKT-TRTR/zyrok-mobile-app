@@ -1,0 +1,48 @@
+{
+  "android": {
+    "packageName": "com.zyrok.app",
+    "versionCode": 1,
+    "versionName": "1.0.0",
+    "targetSdkVersion": 34,
+    "minSdkVersion": 24,
+    "compileSdkVersion": 34,
+    "buildToolsVersion": "34.0.0",
+    "permissions": [
+      "android.permission.CAMERA",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.INTERNET",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.VIBRATE",
+      "android.permission.WAKE_LOCK"
+    ],
+    "features": [
+      "android.hardware.camera",
+      "android.hardware.camera.autofocus",
+      "android.hardware.microphone"
+    ],
+    "gradle": {
+      "distributionUrl": "https://services.gradle.org/distributions/gradle-8.7-bin.zip"
+    },
+    "keystore": {
+      "alias": "zyrok-release",
+      "storeFile": "zyrok-release.keystore",
+      "storeType": "JKS"
+    }
+  },
+  "cognito": {
+    "userPoolId": "us-east-2_HEgFgpasb",
+    "userPoolWebClientId": "32b6rrbc2bkckbho9ojbqjmcef",
+    "region": "us-east-2",
+    "identityPoolId": "",
+    "mandatorySignIn": true,
+    "oauth": {
+      "domain": "zyrok-auth.auth.us-east-2.amazoncognito.com",
+      "scope": ["email", "openid", "profile"],
+      "redirectSignIn": "com.zyrok.app://",
+      "redirectSignOut": "com.zyrok.app://",
+      "responseType": "code"
+    }
+  }
+}
